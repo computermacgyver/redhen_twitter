@@ -8,6 +8,7 @@ import multiprocessing
 import datetime
 
 #TODO: Anyting else to include in summary file?
+#see https://developer.twitter.com/en/docs/tweets/data-dictionary/overview/intro-to-tweet-json
 OUTPUT_STR="|".join(["{created_at}","{id}","{tweet_lang}",
 	"{user_id}","{user_created_at}", "{user_lang}", "{location}", "{statuses_count}",
 	"{time_zone}", "{utc_offset}", #"{followers_count}", "{friends_count}",
@@ -15,7 +16,12 @@ OUTPUT_STR="|".join(["{created_at}","{id}","{tweet_lang}",
 	"{text}"
 	])+"\n"
 
-RE_LF_TAB=re.compile(r"[\r\n\t]")
+#TODO: Decide final format.
+# * Use "|" to separate fields.
+# * Should text fields be enclosed in quotation marks?
+# * Or, should "|" be replaced / escaped in text?
+
+RE_CR_LF=re.compile(r"[\r\n]")
 RE_MENTION=re.compile(r"@[a-zA-Z0-9_]+")
 RE_URL=re.compile(r"https?://\S+")
 
@@ -31,8 +37,6 @@ def summarize_file(infile):
 					fhOut.write(OUTPUT_STR.format(**vals))
 
 def summarize_tweet(rawtweet):
-	#https://developer.twitter.com/en/docs/tweets/data-dictionary/overview/intro-to-tweet-json
-
 	if rawtweet==None or rawtweet.strip()=="":
 		return None
 	
@@ -70,7 +74,8 @@ def summarize_tweet(rawtweet):
 		vals["user_lang"]=user["lang"]
 
 		if user["location"]!=None:
-			vals["location"]='"{}"'.format(RE_LF_TAB.sub(" ",user["location"]))
+			#TODO: How to handel | in text?
+			vals["location"]=RE_CR_LF.sub(" ",user["location"]).replace("|","\\|")
 		else:
 			vals["location"]="NA"
 
@@ -85,7 +90,8 @@ def summarize_tweet(rawtweet):
 			txt=tweet["text"]
 
 		#TODO: detect_tweet_lang(txt)
-		vals["text"]='"{}"'.format(RE_LF_TAB.sub(" ",txt))
+		#TODO: How to handel | in text?
+		vals["text"]=RE_CR_LF.sub(" ",txt).replace("|","\\|")
 
 		return vals
 	except Exception as e:
